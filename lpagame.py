@@ -15,3 +15,4 @@ while True:
     if event.type == pygame.QUIT:
       pygame.quit() # fecha a janela do jogo
       quit() #termina o processo do jogo
+      
