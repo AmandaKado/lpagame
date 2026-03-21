@@ -1,13 +1,14 @@
 import pygame
 import random
 import sys
-import math # Necessário para o efeito de pulsação (onda seno)
+import math
 
 # --- INICIALIZAÇÃO ---
 pygame.init()
 LARGURA, ALTURA = 800, 1000
 window = pygame.display.set_mode((LARGURA, ALTURA))
 pygame.display.set_caption("Pomar da Kado!")
+# Define o ícone da janela
 pygame.display.set_icon(pygame.image.load("assets/frutas/ruby.png"))
 clock = pygame.time.Clock()
 
@@ -41,7 +42,6 @@ reacao_feliz  = carregar_imagem("assets/personagem/feliz.png", (300, 300))
 reacao_triste = carregar_imagem("assets/personagem/triste.png", (300, 300))
 personagem_menu_feliz = carregar_imagem("assets/personagem/feliz.png", (400, 400))
 personagem_menu_neutro = carregar_imagem("assets/personagem/neutro.png", (400, 400))
-
 img_fundo = carregar_imagem("assets/background.jpeg", (LARGURA, ALTURA))
 
 # --- CLASSES ---
@@ -91,7 +91,11 @@ class Item(pygame.sprite.Sprite):
 
     def update(self):
         self.rect.y += self.velocidade
-        if self.rect.top > ALTURA: self.kill()
+        # Retorna True se o item passou do limite inferior da tela
+        if self.rect.top > ALTURA:
+            self.kill()
+            return True
+        return False
 
 # --- FUNÇÕES DE TELA ---
 
@@ -103,28 +107,22 @@ def tela_inicial():
         
         tempo = pygame.time.get_ticks()
 
-        # 1. Título
         texto_titulo = fonte_titulo.render("POMAR DA KADO", True, (255, 50, 50))
         rect_titulo = texto_titulo.get_rect(center=(LARGURA//2, 180))
         window.blit(texto_titulo, rect_titulo)
         
-        # 2. Personagem Animada (Alterna a cada 500ms)
         img_atual = personagem_menu_feliz if (tempo // 500) % 2 == 0 else personagem_menu_neutro
         rect_char = img_atual.get_rect(center=(LARGURA//2, ALTURA//2 - 20))
         window.blit(img_atual, rect_char)
         
-        # 3. Instrução Iniciar com efeito de "Batimento" (Pulsação)
-        # math.sin cria uma onda que vai de -1 a 1 suavemente
         escala_pulso = 1.0 + math.sin(tempo * 0.005) * 0.1 
         texto_base = fonte_padrao.render("Pressione ESPAÇO para iniciar", True, (255, 255, 0))
         
-        # Redimensiona o texto para o efeito de pulso
         w, h = texto_base.get_size()
         texto_pulso = pygame.transform.smoothscale(texto_base, (int(w * escala_pulso), int(h * escala_pulso)))
         rect_start = texto_pulso.get_rect(center=(LARGURA//2, ALTURA//2 + 250))
         window.blit(texto_pulso, rect_start)
         
-        # 4. Instrução Setas
         texto_setas = fonte_pequena.render("Use as SETAS [<-] [->] para mover", True, (200, 200, 200))
         rect_setas = texto_setas.get_rect(center=(LARGURA//2, ALTURA - 60))
         window.blit(texto_setas, rect_setas)
@@ -134,14 +132,14 @@ def tela_inicial():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit(); sys.exit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    esperando = False
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                esperando = False
         clock.tick(60)
 
 def jogar():
     pontos = 0
     bombas_pegas = 0
+    perdidas = 0
     reacao_atual = reacao_normal
     timer_reacao_p = 0
     
@@ -157,15 +155,19 @@ def jogar():
             if event.type == pygame.QUIT:
                 pygame.quit(); sys.exit()
 
-        if random.random() < 0.02:
+        if random.random() < 0.03: # Frequência de queda
             tipo = "bomba" if random.random() < 0.25 else "fruta"
             novo = Item(tipo)
             todos_sprites.add(novo)
             if tipo == "fruta": frutas.add(novo)
             else: bombas.add(novo)
 
-        todos_sprites.update()
-        
+        # Atualização com verificação de itens que saíram da tela
+        for sprite in todos_sprites:
+            passou_da_tela = sprite.update()
+            if passou_da_tela and hasattr(sprite, 'tipo') and sprite.tipo == "fruta":
+                perdidas += 1
+
         if timer_reacao_p > 0: timer_reacao_p -= 1
         else: reacao_atual = reacao_normal
 
@@ -183,18 +185,19 @@ def jogar():
             jogador.reagir()
             if bombas_pegas >= 3: rodando = False
 
-        # DESENHO DO JOGO
+        # DESENHO
         window.blit(img_fundo, (0, 0))
         window.blit(overlay_jogo, (0, 0))
-        
         todos_sprites.draw(window)
         window.blit(reacao_atual, (20, 20))
         
-        # UI (Placar)
         txt_p = fonte_padrao.render(f"Frutas: {pontos}", True, (255, 255, 255))
         txt_b = fonte_padrao.render(f"Bombas: {bombas_pegas}/3", True, (255, 80, 80))
-        window.blit(txt_p, (LARGURA - 250, 40))
-        window.blit(txt_b, (LARGURA - 250, 100))
+        txt_l = fonte_padrao.render(f"Perdidas: {perdidas}", True, (200, 200, 200))
+        
+        window.blit(txt_p, (LARGURA - 280, 40))
+        window.blit(txt_b, (LARGURA - 280, 100))
+        window.blit(txt_l, (LARGURA - 280, 160))
 
         pygame.display.flip()
         clock.tick(60)
