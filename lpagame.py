@@ -5,7 +5,7 @@ import math
 
 # --- INICIALIZAÇÃO ---
 pygame.init()
-pygame.mixer.init() # Inicializa o sistema de som
+pygame.mixer.init() 
 
 LARGURA, ALTURA = 600, 800
 window = pygame.display.set_mode((LARGURA, ALTURA))
@@ -27,16 +27,13 @@ fonte_pequena = pygame.font.SysFont("Arial", 20, bold=True)
 
 # --- ÁUDIO ---
 # Música de fundo (carrega e toca em loop)
-pygame.mixer.music.load("assets/sons/musica_fundo.mp3") 
-pygame.mixer.music.set_volume(0.4) # Volume de 0.0 a 1.0
-pygame.mixer.music.play(-1) # O -1 faz a música recomeçar sempre que acabar
+pygame.mixer.music.load("assets/sons/musica.mp3") 
+pygame.mixer.music.set_volume(0.4) 
+pygame.mixer.music.play(-1)
 
-# Efeitos sonoros
-som_bomba = pygame.mixer.Sound("assets/sons/bomba.wav")
+# Efeitos sonoros bomba
+som_bomba = pygame.mixer.Sound("assets/sons/boom.wav")
 som_bomba.set_volume(0.6)
-
-# Se você tiver um som para fruta, pode adicionar aqui também:
-# som_fruta = pygame.mixer.Sound("assets/sons/fruta.wav")
 
 # --- CARREGAMENTO DE ASSETS ---
 def carregar_imagem(caminho, escala=None):
@@ -207,7 +204,6 @@ def jogar():
         # Colisão com frutas
         if pygame.sprite.spritecollide(jogador, frutas, True):
             pontos += 1; reacao_atual = reacao_feliz; timer_reacao_p = 45; jogador.reagir()
-            # som_fruta.play() # Caso tenha som de fruta, descomente aqui
             
         # Colisão com bombas
         if pygame.sprite.spritecollide(jogador, bombas, True):
