@@ -2,6 +2,8 @@ import pygame
 import random
 import sys
 import math
+import json
+import os
 
 # --- INICIALIZAÇÃO ---
 pygame.init()
@@ -12,6 +14,21 @@ window = pygame.display.set_mode((LARGURA, ALTURA))
 pygame.display.set_caption("Pomar da Kado!")
 pygame.display.set_icon(pygame.image.load("assets/frutas/ruby.png"))
 clock = pygame.time.Clock()
+
+# --- FUNÇÕES DE RECORD (JSON) ---
+def carregar_record():
+    try:
+        if os.path.exists("record.json"):
+            with open("record.json", "r") as f:
+                dados = json.load(f)
+                return dados.get("record", 0)
+    except:
+        pass
+    return 0
+
+def salvar_record(novo_record):
+    with open("record.json", "w") as f:
+        json.dump({"record": novo_record}, f)
 
 # --- CAMADAS DE ESCURECIMENTO ---
 overlay_menu = pygame.Surface((LARGURA, ALTURA), pygame.SRCALPHA)
@@ -34,7 +51,6 @@ som_bomba = pygame.mixer.Sound("assets/sons/boom.wav")
 som_cesta = pygame.mixer.Sound("assets/sons/cesta.wav")
 som_bomba.set_volume(0.6)
 som_cesta.set_volume(0.6)
-
 
 # --- CARREGAMENTO DE ASSETS ---
 def carregar_imagem(caminho, escala=None):
@@ -129,6 +145,7 @@ class Item(pygame.sprite.Sprite):
 
 def tela_inicial():
     esperando = True
+    record = carregar_record()
     while esperando:
         window.blit(img_fundo, (0, 0)) 
         window.blit(overlay_menu, (0, 0)) 
@@ -136,6 +153,9 @@ def tela_inicial():
 
         texto_titulo = fonte_titulo.render("POMAR DA KADO", True, (255, 50, 50))
         window.blit(texto_titulo, texto_titulo.get_rect(center=(LARGURA//2, 100)))
+
+        texto_record_menu = fonte_pequena.render(f"MELHOR PONTUAÇÃO: {record}", True, (255, 255, 255))
+        window.blit(texto_record_menu, texto_record_menu.get_rect(center=(LARGURA//2, 160)))
         
         img_atual = personagem_menu_feliz if (tempo // 500) % 2 == 0 else personagem_menu_neutro
         window.blit(img_atual, img_atual.get_rect(center=(LARGURA//2, ALTURA//2)))
@@ -157,6 +177,14 @@ def tela_inicial():
 
 def tela_game_over(pontos_finais):
     esperando = True
+    record = carregar_record()
+    # Verifica se bateu o recorde
+    novo_recorde = False
+    if pontos_finais > record:
+        salvar_record(pontos_finais)
+        record = pontos_finais
+        novo_recorde = True
+
     while esperando:
         window.blit(img_fundo, (0, 0))
         window.blit(overlay_menu, (0, 0))
@@ -167,9 +195,14 @@ def tela_game_over(pontos_finais):
         window.blit(personagem_perdeu, personagem_perdeu.get_rect(center=(LARGURA//2, ALTURA//2)))
         
         texto_pts = fonte_padrao.render(f"Pontos totais: {pontos_finais}", True, (255, 255, 255))
-        window.blit(texto_pts, texto_pts.get_rect(center=(LARGURA//2, ALTURA//2 + 200)))
+        window.blit(texto_pts, texto_pts.get_rect(center=(LARGURA//2, ALTURA//2 + 180)))
         
-        texto_voltar = fonte_pequena.render("Pressione ESPAÇO para tentar de novo", True, (200, 200, 200))
+        cor_record = (0, 255, 0) if novo_recorde else (255, 255, 255)
+        label_record = "NOVO RECORDE: " if novo_recorde else "MELHOR PONTUAÇÃO: "
+        texto_rec_final = fonte_pequena.render(f"{label_record}{record}", True, cor_record)
+        window.blit(texto_rec_final, texto_rec_final.get_rect(center=(LARGURA//2, ALTURA//2 + 230)))
+        
+        texto_voltar = fonte_padrao.render("Pressione ESPAÇO para tentar de novo", True, (200, 200, 200))
         window.blit(texto_voltar, texto_voltar.get_rect(center=(LARGURA//2, ALTURA - 60)))
         
         pygame.display.flip()
@@ -182,6 +215,7 @@ def jogar():
     pontos = 0
     bombas_pegas = 0
     perdidas = 0
+    record_atual = carregar_record()
     reacao_atual = reacao_normal
     timer_reacao_p = 0
     todos_sprites = pygame.sprite.Group()
@@ -220,11 +254,14 @@ def jogar():
         window.blit(img_fundo, (0, 0))
         window.blit(overlay_jogo, (0, 0))
         todos_sprites.draw(window)
-        window.blit(reacao_atual, (380, 90))
+        window.blit(reacao_atual, (385, 90))
         
         # UI - Pontos e Perdidas
-        window.blit(fonte_padrao.render(f"Frutas: {pontos} ", True, (0, 255, 0)), (LARGURA - 570, 40)) 
-        window.blit(fonte_padrao.render(f"Perdidas: {perdidas}", True, (200, 200, 200)), (LARGURA - 570, 80))
+        window.blit(fonte_padrao.render(f"Frutas: {pontos} ", True, (0, 255, 0)), (LARGURA - 570, 120)) 
+        window.blit(fonte_padrao.render(f"Perdidas: {perdidas}", True, (255, 255, 255)), (LARGURA - 570, 80))
+        
+        # Mostrar Recorde durante o jogo
+        window.blit(fonte_padrao.render(f"Record: {record_atual}", True, (255, 255, 0)), (LARGURA - 570, 40))
 
         # UI - Lógica dos Corações (Vidas)
         pos_vidas = (LARGURA - 200, 30)
@@ -238,6 +275,7 @@ def jogar():
         pygame.display.flip()
         clock.tick(60)
     
+    # Fim da partida
     tela_game_over(pontos)
     tela_inicial()
     jogar()
