@@ -5,10 +5,9 @@ import math
 
 # --- INICIALIZAÇÃO ---
 pygame.init()
-LARGURA, ALTURA = 800, 1000
+LARGURA, ALTURA = 600, 800
 window = pygame.display.set_mode((LARGURA, ALTURA))
 pygame.display.set_caption("Pomar da Kado!")
-# Define o ícone da janela
 pygame.display.set_icon(pygame.image.load("assets/frutas/ruby.png"))
 clock = pygame.time.Clock()
 
@@ -20,9 +19,9 @@ overlay_jogo = pygame.Surface((LARGURA, ALTURA), pygame.SRCALPHA)
 overlay_jogo.fill((0, 0, 0, 80)) 
 
 # --- FONTES ---
-fonte_titulo = pygame.font.SysFont("segoe ui", 70, bold=True) 
-fonte_padrao = pygame.font.SysFont("Arial", 40, bold=True)
-fonte_pequena = pygame.font.SysFont("Arial", 25, bold=True)
+fonte_titulo = pygame.font.SysFont("segoe ui", 50, bold=True) 
+fonte_padrao = pygame.font.SysFont("Arial", 30, bold=True)
+fonte_pequena = pygame.font.SysFont("Arial", 20, bold=True)
 
 # --- CARREGAMENTO DE ASSETS ---
 def carregar_imagem(caminho, escala=None):
@@ -42,6 +41,8 @@ reacao_feliz  = carregar_imagem("assets/personagem/feliz.png", (300, 300))
 reacao_triste = carregar_imagem("assets/personagem/triste.png", (300, 300))
 personagem_menu_feliz = carregar_imagem("assets/personagem/feliz.png", (400, 400))
 personagem_menu_neutro = carregar_imagem("assets/personagem/neutro.png", (400, 400))
+# Splash triste maior para a tela de perda
+personagem_perdeu = carregar_imagem("assets/personagem/triste.png", (450, 450))
 img_fundo = carregar_imagem("assets/background.jpeg", (LARGURA, ALTURA))
 
 # --- CLASSES ---
@@ -78,20 +79,30 @@ class Item(pygame.sprite.Sprite):
     def __init__(self, tipo):
         super().__init__()
         self.tipo = tipo
-        tamanho = (60, 60)
+        self.tamanho_base = 60
         if tipo == "bomba":
-            self.image = carregar_imagem("assets/bomba/bomba.png", tamanho)
+            self.image_original = carregar_imagem("assets/bomba/bomba.png", (self.tamanho_base, self.tamanho_base))
         else:
             frutas = ["assets/frutas/cherry.png", "assets/frutas/apple.png", "assets/frutas/pear.png"]
-            self.image = carregar_imagem(random.choice(frutas), tamanho)
+            self.image_original = carregar_imagem(random.choice(frutas), (self.tamanho_base, self.tamanho_base))
+            
+        self.image = self.image_original
         self.rect = self.image.get_rect()
         self.rect.x = random.randint(50, LARGURA - 50)
         self.rect.y = -100
         self.velocidade = random.randint(6, 11)
+        self.offset_animacao = random.uniform(0, 10)
 
     def update(self):
         self.rect.y += self.velocidade
-        # Retorna True se o item passou do limite inferior da tela
+        if self.tipo == "bomba":
+            tempo = pygame.time.get_ticks() * 0.01 + self.offset_animacao
+            escala = 1.0 + math.sin(tempo) * 0.15
+            novo_tam = int(self.tamanho_base * escala)
+            centro_atual = self.rect.center
+            self.image = pygame.transform.smoothscale(self.image_original, (novo_tam, novo_tam))
+            self.rect = self.image.get_rect(center=centro_atual)
+
         if self.rect.top > ALTURA:
             self.kill()
             return True
@@ -104,36 +115,59 @@ def tela_inicial():
     while esperando:
         window.blit(img_fundo, (0, 0)) 
         window.blit(overlay_menu, (0, 0)) 
-        
         tempo = pygame.time.get_ticks()
 
         texto_titulo = fonte_titulo.render("POMAR DA KADO", True, (255, 50, 50))
-        rect_titulo = texto_titulo.get_rect(center=(LARGURA//2, 180))
+        rect_titulo = texto_titulo.get_rect(center=(LARGURA//2, 100))
         window.blit(texto_titulo, rect_titulo)
         
         img_atual = personagem_menu_feliz if (tempo // 500) % 2 == 0 else personagem_menu_neutro
-        rect_char = img_atual.get_rect(center=(LARGURA//2, ALTURA//2 - 20))
+        rect_char = img_atual.get_rect(center=(LARGURA//2, ALTURA//2 - 0))
         window.blit(img_atual, rect_char)
         
         escala_pulso = 1.0 + math.sin(tempo * 0.005) * 0.1 
-        texto_base = fonte_padrao.render("Pressione ESPAÇO para iniciar", True, (255, 255, 0))
-        
+        texto_base = fonte_padrao.render("Pressione ESPAÇO para iniciar", True, (0, 255, 0))
         w, h = texto_base.get_size()
         texto_pulso = pygame.transform.smoothscale(texto_base, (int(w * escala_pulso), int(h * escala_pulso)))
-        rect_start = texto_pulso.get_rect(center=(LARGURA//2, ALTURA//2 + 250))
+        rect_start = texto_pulso.get_rect(center=(LARGURA//2, ALTURA//2 + 200))
         window.blit(texto_pulso, rect_start)
         
-        texto_setas = fonte_pequena.render("Use as SETAS [<-] [->] para mover", True, (200, 200, 200))
+        texto_setas = fonte_pequena.render("Use as SETAS [←] [→] para mover", True, (200, 200, 200))
         rect_setas = texto_setas.get_rect(center=(LARGURA//2, ALTURA - 60))
         window.blit(texto_setas, rect_setas)
         
         pygame.display.flip()
-        
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit(); sys.exit()
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                esperando = False
+            if event.type == pygame.QUIT: pygame.quit(); sys.exit()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE: esperando = False
+        clock.tick(60)
+
+def tela_game_over(pontos_finais):
+    esperando = True
+    while esperando:
+        window.blit(img_fundo, (0, 0))
+        window.blit(overlay_menu, (0, 0))
+        
+        # Título de Perda
+        texto_perdeu = fonte_titulo.render("VOCÊ PERDEU!", True, (255, 50, 50))
+        window.blit(texto_perdeu, texto_perdeu.get_rect(center=(LARGURA//2, 100)))
+        
+        # Splash Triste
+        rect_char = personagem_perdeu.get_rect(center=(LARGURA//2, ALTURA//2))
+        window.blit(personagem_perdeu, rect_char)
+        
+        # Pontuação Final
+        texto_pts = fonte_padrao.render(f"Pontos totais: {pontos_finais}", True, (255, 255, 255))
+        window.blit(texto_pts, texto_pts.get_rect(center=(LARGURA//2, ALTURA//2 + 200)))
+        
+        # Instrução
+        texto_voltar = fonte_pequena.render("Pressione ESPAÇO para tentar de novo", True, (200, 200, 200))
+        window.blit(texto_voltar, texto_voltar.get_rect(center=(LARGURA//2, ALTURA - 60)))
+        
+        pygame.display.flip()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT: pygame.quit(); sys.exit()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE: esperando = False
         clock.tick(60)
 
 def jogar():
@@ -142,67 +176,53 @@ def jogar():
     perdidas = 0
     reacao_atual = reacao_normal
     timer_reacao_p = 0
-    
     todos_sprites = pygame.sprite.Group()
-    frutas = pygame.sprite.Group()
-    bombas = pygame.sprite.Group()
+    frutas, bombas = pygame.sprite.Group(), pygame.sprite.Group()
     jogador = Cesto()
     todos_sprites.add(jogador)
     
     rodando = True
     while rodando:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit(); sys.exit()
+            if event.type == pygame.QUIT: pygame.quit(); sys.exit()
 
-        if random.random() < 0.03: # Frequência de queda
+        if random.random() < 0.03: 
             tipo = "bomba" if random.random() < 0.25 else "fruta"
-            novo = Item(tipo)
-            todos_sprites.add(novo)
+            novo = Item(tipo); todos_sprites.add(novo)
             if tipo == "fruta": frutas.add(novo)
             else: bombas.add(novo)
 
-        # Atualização com verificação de itens que saíram da tela
         for sprite in todos_sprites:
-            passou_da_tela = sprite.update()
-            if passou_da_tela and hasattr(sprite, 'tipo') and sprite.tipo == "fruta":
-                perdidas += 1
+            passou = sprite.update()
+            if passou and hasattr(sprite, 'tipo') and sprite.tipo == "fruta": perdidas += 1
 
         if timer_reacao_p > 0: timer_reacao_p -= 1
         else: reacao_atual = reacao_normal
 
-        # Colisões
         if pygame.sprite.spritecollide(jogador, frutas, True):
-            pontos += 1
-            reacao_atual = reacao_feliz
-            timer_reacao_p = 45
-            jogador.reagir()
+            pontos += 1; reacao_atual = reacao_feliz; timer_reacao_p = 45; jogador.reagir()
             
         if pygame.sprite.spritecollide(jogador, bombas, True):
-            bombas_pegas += 1
-            reacao_atual = reacao_triste
-            timer_reacao_p = 45
-            jogador.reagir()
+            bombas_pegas += 1; reacao_atual = reacao_triste; timer_reacao_p = 45; jogador.reagir()
             if bombas_pegas >= 3: rodando = False
 
-        # DESENHO
         window.blit(img_fundo, (0, 0))
         window.blit(overlay_jogo, (0, 0))
         todos_sprites.draw(window)
         window.blit(reacao_atual, (20, 20))
         
-        txt_p = fonte_padrao.render(f"Frutas: {pontos}", True, (255, 255, 255))
-        txt_b = fonte_padrao.render(f"Bombas: {bombas_pegas}/3", True, (255, 80, 80))
-        txt_l = fonte_padrao.render(f"Perdidas: {perdidas}", True, (200, 200, 200))
-        
-        window.blit(txt_p, (LARGURA - 280, 40))
-        window.blit(txt_b, (LARGURA - 280, 100))
-        window.blit(txt_l, (LARGURA - 280, 160))
+        window.blit(fonte_padrao.render(f"Frutas: {pontos}", True, (0, 255, 0)), (LARGURA - 280, 40))
+        window.blit(fonte_padrao.render(f"Bombas: {bombas_pegas}/3", True, (255, 80, 80)), (LARGURA - 280, 100))
+        window.blit(fonte_padrao.render(f"Perdidas: {perdidas}", True, (200, 200, 200)), (LARGURA - 280, 160))
 
         pygame.display.flip()
         clock.tick(60)
     
+    # Saiu do loop de jogo (Perdeu)
+    tela_game_over(pontos)
+    # Após o game over, volta para a tela inicial
     tela_inicial()
+    # Reinicia o jogo
     jogar()
 
 # --- EXECUÇÃO ---
