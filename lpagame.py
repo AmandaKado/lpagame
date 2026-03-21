@@ -12,7 +12,7 @@ pygame.mixer.init()
 LARGURA, ALTURA = 600, 800
 window = pygame.display.set_mode((LARGURA, ALTURA))
 pygame.display.set_caption("Pomar da Kado!")
-pygame.display.set_icon(pygame.image.load("assets/frutas/ruby.png"))
+pygame.display.set_icon(pygame.image.load("dist/assets/frutas/ruby.png"))
 clock = pygame.time.Clock()
 
 # --- FUNÇÕES DE RECORD (JSON) ---
@@ -43,16 +43,16 @@ fonte_padrao = pygame.font.SysFont("Arial", 30, bold=True)
 fonte_pequena = pygame.font.SysFont("Arial", 20, bold=True)
 
 # --- ÁUDIO ---
-pygame.mixer.music.load("assets/sons/musica.mp3") 
+pygame.mixer.music.load("dist/assets/sons/musica.mp3") 
 pygame.mixer.music.set_volume(0.4) 
 pygame.mixer.music.play(-1)
 
-som_bomba = pygame.mixer.Sound("assets/sons/boom.wav")
-som_cesta = pygame.mixer.Sound("assets/sons/cesta.wav")
+som_bomba = pygame.mixer.Sound("dist/assets/sons/boom.wav")
+som_cesta = pygame.mixer.Sound("dist/assets/sons/cesta.wav")
 som_bomba.set_volume(0.6)
 som_cesta.set_volume(0.6)
 
-# --- CARREGAMENTO DE ASSETS ---
+# --- CARREGAMENTO DE dist/assets ---
 def carregar_imagem(caminho, escala=None):
     try:
         img = pygame.image.load(caminho).convert_alpha()
@@ -64,27 +64,27 @@ def carregar_imagem(caminho, escala=None):
         img.fill((255, 0, 255)) 
         return img
 
-# Assets de Imagem
-reacao_normal = carregar_imagem("assets/personagem/neutro.png", (200, 200))
-reacao_feliz  = carregar_imagem("assets/personagem/feliz.png", (200, 200))
-reacao_triste = carregar_imagem("assets/personagem/triste.png", (200, 200))
-personagem_menu_feliz = carregar_imagem("assets/personagem/feliz.png", (400, 400))
-personagem_menu_neutro = carregar_imagem("assets/personagem/neutro.png", (400, 400))
-personagem_perdeu = carregar_imagem("assets/personagem/triste.png", (450, 450))
-img_fundo = carregar_imagem("assets/background.jpeg", (LARGURA, ALTURA))
+# dist/assets de Imagem
+reacao_normal = carregar_imagem("dist/assets/personagem/neutro.png", (200, 200))
+reacao_feliz  = carregar_imagem("dist/assets/personagem/feliz.png", (200, 200))
+reacao_triste = carregar_imagem("dist/assets/personagem/triste.png", (200, 200))
+personagem_menu_feliz = carregar_imagem("dist/assets/personagem/feliz.png", (400, 400))
+personagem_menu_neutro = carregar_imagem("dist/assets/personagem/neutro.png", (400, 400))
+personagem_perdeu = carregar_imagem("dist/assets/personagem/triste.png", (450, 450))
+img_fundo = carregar_imagem("dist/assets/background.jpeg", (LARGURA, ALTURA))
 
 # --- IMAGENS DE VIDAS (CORAÇÕES) ---
-img_vidas_3 = carregar_imagem("assets/bomba/vida3.png", (160, 60))
-img_vidas_2 = carregar_imagem("assets/bomba/vida2.png", (160, 60))
-img_vidas_1 = carregar_imagem("assets/bomba/vida1.png", (160, 60))
+img_vidas_3 = carregar_imagem("dist/assets/bomba/vida3.png", (160, 60))
+img_vidas_2 = carregar_imagem("dist/assets/bomba/vida2.png", (160, 60))
+img_vidas_1 = carregar_imagem("dist/assets/bomba/vida1.png", (160, 60))
 
 # --- CLASSES ---
 
 class Cesto(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.img_v1 = carregar_imagem("assets/cesto/cestonaopegou.png", (120, 80))
-        self.img_v2 = carregar_imagem("assets/cesto/cestopegouCerto.png", (120, 80))
+        self.img_v1 = carregar_imagem("dist/assets/cesto/cestonaopegou.png", (120, 80))
+        self.img_v2 = carregar_imagem("dist/assets/cesto/cestopegouCerto.png", (120, 80))
         self.image = self.img_v1
         self.rect = self.image.get_rect()
         self.rect.centerx = LARGURA // 2
@@ -114,9 +114,9 @@ class Item(pygame.sprite.Sprite):
         self.tipo = tipo
         self.tamanho_base = 60
         if tipo == "bomba":
-            self.image_original = carregar_imagem("assets/bomba/bomba.png", (self.tamanho_base, self.tamanho_base))
+            self.image_original = carregar_imagem("dist/assets/bomba/bomba.png", (self.tamanho_base, self.tamanho_base))
         else:
-            frutas = ["assets/frutas/cherry.png", "assets/frutas/apple.png", "assets/frutas/pear.png"]
+            frutas = ["dist/assets/frutas/cherry.png", "dist/assets/frutas/apple.png", "dist/assets/frutas/pear.png"]
             self.image_original = carregar_imagem(random.choice(frutas), (self.tamanho_base, self.tamanho_base))
             
         self.image = self.image_original
