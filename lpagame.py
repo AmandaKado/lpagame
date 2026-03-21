@@ -26,12 +26,10 @@ fonte_padrao = pygame.font.SysFont("Arial", 30, bold=True)
 fonte_pequena = pygame.font.SysFont("Arial", 20, bold=True)
 
 # --- ÁUDIO ---
-# Música de fundo (carrega e toca em loop)
 pygame.mixer.music.load("assets/sons/musica.mp3") 
 pygame.mixer.music.set_volume(0.4) 
 pygame.mixer.music.play(-1)
 
-# Efeitos sonoros bomba
 som_bomba = pygame.mixer.Sound("assets/sons/boom.wav")
 som_bomba.set_volume(0.6)
 
@@ -48,13 +46,18 @@ def carregar_imagem(caminho, escala=None):
         return img
 
 # Assets de Imagem
-reacao_normal = carregar_imagem("assets/personagem/neutro.png", (300, 300))
-reacao_feliz  = carregar_imagem("assets/personagem/feliz.png", (300, 300))
-reacao_triste = carregar_imagem("assets/personagem/triste.png", (300, 300))
+reacao_normal = carregar_imagem("assets/personagem/neutro.png", (250, 250))
+reacao_feliz  = carregar_imagem("assets/personagem/feliz.png", (250, 250))
+reacao_triste = carregar_imagem("assets/personagem/triste.png", (250, 250))
 personagem_menu_feliz = carregar_imagem("assets/personagem/feliz.png", (400, 400))
 personagem_menu_neutro = carregar_imagem("assets/personagem/neutro.png", (400, 400))
 personagem_perdeu = carregar_imagem("assets/personagem/triste.png", (450, 450))
 img_fundo = carregar_imagem("assets/background.jpeg", (LARGURA, ALTURA))
+
+# --- IMAGENS DE VIDAS (CORAÇÕES) ---
+img_vidas_3 = carregar_imagem("assets/bomba/vida3.png", (160, 60))
+img_vidas_2 = carregar_imagem("assets/bomba/vida2.png", (160, 60))
+img_vidas_1 = carregar_imagem("assets/bomba/vida1.png", (160, 60))
 
 # --- CLASSES ---
 
@@ -201,24 +204,32 @@ def jogar():
         if timer_reacao_p > 0: timer_reacao_p -= 1
         else: reacao_atual = reacao_normal
 
-        # Colisão com frutas
         if pygame.sprite.spritecollide(jogador, frutas, True):
             pontos += 1; reacao_atual = reacao_feliz; timer_reacao_p = 45; jogador.reagir()
             
-        # Colisão com bombas
         if pygame.sprite.spritecollide(jogador, bombas, True):
             bombas_pegas += 1; reacao_atual = reacao_triste; timer_reacao_p = 45; jogador.reagir()
-            som_bomba.play() # Toca o som da bomba
+            som_bomba.play()
             if bombas_pegas >= 3: rodando = False
 
+        # DESENHO
         window.blit(img_fundo, (0, 0))
         window.blit(overlay_jogo, (0, 0))
         todos_sprites.draw(window)
         window.blit(reacao_atual, (20, 20))
         
-        window.blit(fonte_padrao.render(f"Frutas: {pontos}", True, (0, 255, 0)), (LARGURA - 280, 40))
-        window.blit(fonte_padrao.render(f"Bombas: {bombas_pegas}/3", True, (255, 80, 80)), (LARGURA - 280, 100))
-        window.blit(fonte_padrao.render(f"Perdidas: {perdidas}", True, (200, 200, 200)), (LARGURA - 280, 160))
+        # UI - Pontos e Perdidas
+        window.blit(fonte_padrao.render(f"Frutas: {pontos} ", True, (0, 255, 0)), (LARGURA - 190, 100))
+        window.blit(fonte_padrao.render(f" Perdidas: {perdidas}", True, (200, 200, 200)), (LARGURA - 200, 160))
+
+        # UI - Lógica dos Corações (Vidas)
+        pos_vidas = (LARGURA - 200, 30)
+        if bombas_pegas == 0:
+            window.blit(img_vidas_3, pos_vidas)
+        elif bombas_pegas == 1:
+            window.blit(img_vidas_2, pos_vidas)
+        elif bombas_pegas == 2:
+            window.blit(img_vidas_1, pos_vidas)
 
         pygame.display.flip()
         clock.tick(60)
