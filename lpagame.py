@@ -31,7 +31,10 @@ pygame.mixer.music.set_volume(0.4)
 pygame.mixer.music.play(-1)
 
 som_bomba = pygame.mixer.Sound("assets/sons/boom.wav")
+som_cesta = pygame.mixer.Sound("assets/sons/cesta.wav")
 som_bomba.set_volume(0.6)
+som_cesta.set_volume(0.6)
+
 
 # --- CARREGAMENTO DE ASSETS ---
 def carregar_imagem(caminho, escala=None):
@@ -46,9 +49,9 @@ def carregar_imagem(caminho, escala=None):
         return img
 
 # Assets de Imagem
-reacao_normal = carregar_imagem("assets/personagem/neutro.png", (250, 250))
-reacao_feliz  = carregar_imagem("assets/personagem/feliz.png", (250, 250))
-reacao_triste = carregar_imagem("assets/personagem/triste.png", (250, 250))
+reacao_normal = carregar_imagem("assets/personagem/neutro.png", (200, 200))
+reacao_feliz  = carregar_imagem("assets/personagem/feliz.png", (200, 200))
+reacao_triste = carregar_imagem("assets/personagem/triste.png", (200, 200))
 personagem_menu_feliz = carregar_imagem("assets/personagem/feliz.png", (400, 400))
 personagem_menu_neutro = carregar_imagem("assets/personagem/neutro.png", (400, 400))
 personagem_perdeu = carregar_imagem("assets/personagem/triste.png", (450, 450))
@@ -64,8 +67,8 @@ img_vidas_1 = carregar_imagem("assets/bomba/vida1.png", (160, 60))
 class Cesto(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.img_v1 = carregar_imagem("assets/cesto/cestonaopegou.png", (100, 60))
-        self.img_v2 = carregar_imagem("assets/cesto/cestopegouCerto.png", (100, 60))
+        self.img_v1 = carregar_imagem("assets/cesto/cestonaopegou.png", (120, 80))
+        self.img_v2 = carregar_imagem("assets/cesto/cestopegouCerto.png", (120, 80))
         self.image = self.img_v1
         self.rect = self.image.get_rect()
         self.rect.centerx = LARGURA // 2
@@ -206,6 +209,7 @@ def jogar():
 
         if pygame.sprite.spritecollide(jogador, frutas, True):
             pontos += 1; reacao_atual = reacao_feliz; timer_reacao_p = 45; jogador.reagir()
+            som_cesta.play()
             
         if pygame.sprite.spritecollide(jogador, bombas, True):
             bombas_pegas += 1; reacao_atual = reacao_triste; timer_reacao_p = 45; jogador.reagir()
@@ -216,11 +220,11 @@ def jogar():
         window.blit(img_fundo, (0, 0))
         window.blit(overlay_jogo, (0, 0))
         todos_sprites.draw(window)
-        window.blit(reacao_atual, (20, 20))
+        window.blit(reacao_atual, (380, 90))
         
         # UI - Pontos e Perdidas
-        window.blit(fonte_padrao.render(f"Frutas: {pontos} ", True, (0, 255, 0)), (LARGURA - 190, 100))
-        window.blit(fonte_padrao.render(f" Perdidas: {perdidas}", True, (200, 200, 200)), (LARGURA - 200, 160))
+        window.blit(fonte_padrao.render(f"Frutas: {pontos} ", True, (0, 255, 0)), (LARGURA - 570, 40)) 
+        window.blit(fonte_padrao.render(f"Perdidas: {perdidas}", True, (200, 200, 200)), (LARGURA - 570, 80))
 
         # UI - Lógica dos Corações (Vidas)
         pos_vidas = (LARGURA - 200, 30)
