@@ -5,6 +5,8 @@ import math
 
 # --- INICIALIZAÇÃO ---
 pygame.init()
+pygame.mixer.init() # Inicializa o sistema de som
+
 LARGURA, ALTURA = 600, 800
 window = pygame.display.set_mode((LARGURA, ALTURA))
 pygame.display.set_caption("Pomar da Kado!")
@@ -22,6 +24,19 @@ overlay_jogo.fill((0, 0, 0, 80))
 fonte_titulo = pygame.font.SysFont("segoe ui", 50, bold=True) 
 fonte_padrao = pygame.font.SysFont("Arial", 30, bold=True)
 fonte_pequena = pygame.font.SysFont("Arial", 20, bold=True)
+
+# --- ÁUDIO ---
+# Música de fundo (carrega e toca em loop)
+pygame.mixer.music.load("assets/sons/musica_fundo.mp3") 
+pygame.mixer.music.set_volume(0.4) # Volume de 0.0 a 1.0
+pygame.mixer.music.play(-1) # O -1 faz a música recomeçar sempre que acabar
+
+# Efeitos sonoros
+som_bomba = pygame.mixer.Sound("assets/sons/bomba.wav")
+som_bomba.set_volume(0.6)
+
+# Se você tiver um som para fruta, pode adicionar aqui também:
+# som_fruta = pygame.mixer.Sound("assets/sons/fruta.wav")
 
 # --- CARREGAMENTO DE ASSETS ---
 def carregar_imagem(caminho, escala=None):
@@ -41,7 +56,6 @@ reacao_feliz  = carregar_imagem("assets/personagem/feliz.png", (300, 300))
 reacao_triste = carregar_imagem("assets/personagem/triste.png", (300, 300))
 personagem_menu_feliz = carregar_imagem("assets/personagem/feliz.png", (400, 400))
 personagem_menu_neutro = carregar_imagem("assets/personagem/neutro.png", (400, 400))
-# Splash triste maior para a tela de perda
 personagem_perdeu = carregar_imagem("assets/personagem/triste.png", (450, 450))
 img_fundo = carregar_imagem("assets/background.jpeg", (LARGURA, ALTURA))
 
@@ -118,23 +132,19 @@ def tela_inicial():
         tempo = pygame.time.get_ticks()
 
         texto_titulo = fonte_titulo.render("POMAR DA KADO", True, (255, 50, 50))
-        rect_titulo = texto_titulo.get_rect(center=(LARGURA//2, 100))
-        window.blit(texto_titulo, rect_titulo)
+        window.blit(texto_titulo, texto_titulo.get_rect(center=(LARGURA//2, 100)))
         
         img_atual = personagem_menu_feliz if (tempo // 500) % 2 == 0 else personagem_menu_neutro
-        rect_char = img_atual.get_rect(center=(LARGURA//2, ALTURA//2 - 0))
-        window.blit(img_atual, rect_char)
+        window.blit(img_atual, img_atual.get_rect(center=(LARGURA//2, ALTURA//2)))
         
         escala_pulso = 1.0 + math.sin(tempo * 0.005) * 0.1 
         texto_base = fonte_padrao.render("Pressione ESPAÇO para iniciar", True, (0, 255, 0))
         w, h = texto_base.get_size()
         texto_pulso = pygame.transform.smoothscale(texto_base, (int(w * escala_pulso), int(h * escala_pulso)))
-        rect_start = texto_pulso.get_rect(center=(LARGURA//2, ALTURA//2 + 200))
-        window.blit(texto_pulso, rect_start)
+        window.blit(texto_pulso, texto_pulso.get_rect(center=(LARGURA//2, ALTURA//2 + 200)))
         
         texto_setas = fonte_pequena.render("Use as SETAS [←] [→] para mover", True, (200, 200, 200))
-        rect_setas = texto_setas.get_rect(center=(LARGURA//2, ALTURA - 60))
-        window.blit(texto_setas, rect_setas)
+        window.blit(texto_setas, texto_setas.get_rect(center=(LARGURA//2, ALTURA - 60)))
         
         pygame.display.flip()
         for event in pygame.event.get():
@@ -148,19 +158,14 @@ def tela_game_over(pontos_finais):
         window.blit(img_fundo, (0, 0))
         window.blit(overlay_menu, (0, 0))
         
-        # Título de Perda
         texto_perdeu = fonte_titulo.render("VOCÊ PERDEU!", True, (255, 50, 50))
         window.blit(texto_perdeu, texto_perdeu.get_rect(center=(LARGURA//2, 100)))
         
-        # Splash Triste
-        rect_char = personagem_perdeu.get_rect(center=(LARGURA//2, ALTURA//2))
-        window.blit(personagem_perdeu, rect_char)
+        window.blit(personagem_perdeu, personagem_perdeu.get_rect(center=(LARGURA//2, ALTURA//2)))
         
-        # Pontuação Final
         texto_pts = fonte_padrao.render(f"Pontos totais: {pontos_finais}", True, (255, 255, 255))
         window.blit(texto_pts, texto_pts.get_rect(center=(LARGURA//2, ALTURA//2 + 200)))
         
-        # Instrução
         texto_voltar = fonte_pequena.render("Pressione ESPAÇO para tentar de novo", True, (200, 200, 200))
         window.blit(texto_voltar, texto_voltar.get_rect(center=(LARGURA//2, ALTURA - 60)))
         
@@ -199,11 +204,15 @@ def jogar():
         if timer_reacao_p > 0: timer_reacao_p -= 1
         else: reacao_atual = reacao_normal
 
+        # Colisão com frutas
         if pygame.sprite.spritecollide(jogador, frutas, True):
             pontos += 1; reacao_atual = reacao_feliz; timer_reacao_p = 45; jogador.reagir()
+            # som_fruta.play() # Caso tenha som de fruta, descomente aqui
             
+        # Colisão com bombas
         if pygame.sprite.spritecollide(jogador, bombas, True):
             bombas_pegas += 1; reacao_atual = reacao_triste; timer_reacao_p = 45; jogador.reagir()
+            som_bomba.play() # Toca o som da bomba
             if bombas_pegas >= 3: rodando = False
 
         window.blit(img_fundo, (0, 0))
@@ -218,11 +227,8 @@ def jogar():
         pygame.display.flip()
         clock.tick(60)
     
-    # Saiu do loop de jogo (Perdeu)
     tela_game_over(pontos)
-    # Após o game over, volta para a tela inicial
     tela_inicial()
-    # Reinicia o jogo
     jogar()
 
 # --- EXECUÇÃO ---
